@@ -5,7 +5,17 @@ class Vector
 
 v = (x, y) -> new Vector x, y
 
-grid =
+class Grid
+    constructor : (@width, @height) ->
+        @grid = ((null for y in [0..@height-1]) for x in [0..@width-1])
+
+    at : (pos) ->
+        return @grid[pos.x][pos.y] if @contains pos
+        null
+
+    contains : (pos) -> 0 <= pos.x < @width and 0 <= pos.y < @height
+
+canvas =
     width : 40
     height : 20
 
@@ -45,15 +55,18 @@ grid =
         @game.draw @ctx
 
 class Game
-    constructor : (@grid) ->
-        @field = ((null for y in [0..@grid.height-1]) for x in [0..@grid.width-1])
-        @player = new Player this, "orange", (v 0, 10), (v 1, 0)
+    constructor : (@canvas) ->
+        @player = new Player this, "orange", (v 3, 9), (v 1, 0)
+        @grid = new Grid @canvas.width-2, @canvas.height-2
         @timer = setInterval () =>
-            @grid.draw()
+            @canvas.draw()
         , 200
 
     draw : (ctx) ->
+        ctx.save()
+        ctx.translate @canvas.dx, @canvas.dy
         @player.draw ctx
+        ctx.restore()
 
     stop : () -> clearInterval @timer
 
@@ -61,15 +74,15 @@ class Player
     constructor : (@game, @color, @pos, @dir) ->
 
     draw : (ctx) ->
-        @game.grid.setColor @color
+        @game.canvas.setColor @color
 
         newpos = @pos.add @dir
-        if newpos.x >= @game.grid.width-1
-            @game.grid.out "X", @pos.x, @pos.y
-            @game.stop()
-        else 
+        if @game.grid.contains newpos
             @pos = newpos
-            @game.grid.out "@", @pos.x, @pos.y
+            @game.canvas.out "@", @pos.x, @pos.y
+        else 
+            @game.canvas.out "X", @pos.x, @pos.y
+            @game.stop()
         
 window.onload = ->
-    grid.start (document.getElementById "canvas")
+    canvas.start (document.getElementById "canvas")
