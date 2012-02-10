@@ -26,8 +26,8 @@ class Grid
     contains : (pos) -> 0 <= pos.x < @width and 0 <= pos.y < @height
 
 canvas =
-    width : 40
-    height : 20
+    width : 60
+    height : 30
 
     setColor : (color) ->
         @ctx.fillStyle = @ctx.shadowColor = color
@@ -67,10 +67,11 @@ canvas =
 class Game
     constructor : (@canvas) ->
         @grid = new Grid @canvas.width-2, @canvas.height-2
-        @player = new Player this, "orange", (v 3, 9), (v 1, 0)
+        @player0 = new Player this, "orange", "WASD", (v 3, @grid.height/2), (v 1, 0)
+        @player1 = new Player this, "cornflowerblue", "IJKL", (v @grid.width - 3, @grid.height/2), (v -1, 0)
         @timer = setInterval () =>
             @canvas.draw()
-        , 200
+        , 100
 
     draw : (ctx) ->
         ctx.save()
@@ -82,10 +83,11 @@ class Game
     stop : () -> clearInterval @timer
 
     onKeyDown : (char) ->
-        @player.onKeyDown char
+        @player0.onKeyDown char
+        @player1.onKeyDown char
 
 class Player
-    constructor : (@game, @color, @pos, @dir) ->
+    constructor : (@game, @color, @keyconf, @pos, @dir) ->
         @game.grid.set this, @pos
         @newdir = @dir
 
@@ -104,7 +106,7 @@ class Player
             @game.stop()
         
     onKeyDown : (char) ->
-        idx = "WASD".indexOf char
+        idx = @keyconf.indexOf char
         if idx != -1
             @newdir = [v(0, -1), v(-1, 0), v(0,1), v(1, 0)][idx]
         if @newdir.neg().eq @dir
