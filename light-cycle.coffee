@@ -1,7 +1,8 @@
 class Vector
     constructor : (@x, @y) ->
-    add : (v2) ->
-        v @x + v2.x, @y + v2.y
+    add : (v2) -> v @x + v2.x, @y + v2.y
+    neg : -> v -@x, -@y
+    eq : (v2) -> @x == v2.x and @y == v2.y
 
 v = (x, y) -> new Vector x, y
 
@@ -80,16 +81,21 @@ class Game
 
     stop : () -> clearInterval @timer
 
+    onKeyDown : (char) ->
+        @player.onKeyDown char
+
 class Player
     constructor : (@game, @color, @pos, @dir) ->
         @game.grid.set this, @pos
+        @newdir = @dir
 
     draw : (ctx) ->
         @game.canvas.setColor @color
 
-        newpos = @pos.add @dir
-        if @game.grid.contains newpos
-            (new Trail this).draw ctx
+        newpos = @pos.add @newdir
+        if (@game.grid.contains newpos) and not @game.grid.get newpos
+            (new Trail this, @dir, @newdir).draw ctx
+            @dir = @newdir
             @pos = newpos
             @game.grid.set this, @pos
             @game.canvas.out "@", @pos.x, @pos.y
@@ -97,10 +103,20 @@ class Player
             @game.canvas.out "X", @pos.x, @pos.y
             @game.stop()
         
+    onKeyDown : (char) ->
+        idx = "WASD".indexOf char
+        if idx != -1
+            @newdir = [v(0, -1), v(-1, 0), v(0,1), v(1, 0)][idx]
+        if @newdir.neg().eq @dir
+            @newdir = @dir
+
 class Trail
-    constructor : (@player) ->
+    constructor : (@player, olddir, dir) ->
         @pos = @player.pos
-        @char = "-"
+        @char =
+            if olddir.x == 0 and dir.x == 0 then "|"
+            else if olddir.y == 0 and dir.y == 0 then "-"
+            else "+"
         @player.game.grid.set this, @pos
 
     draw : (ctx) ->
@@ -108,4 +124,6 @@ class Trail
         @player.game.canvas.out @char, @pos.x, @pos.y
  
 window.onload = ->
-    canvas.start (document.getElementById "canvas")
+    el = document.getElementById "canvas"
+    canvas.start el
+    document.body.onkeydown = (event) -> canvas.game.onKeyDown (String.fromCharCode event.keyCode)
