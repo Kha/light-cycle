@@ -1,6 +1,7 @@
 class Vector
     constructor : (@x, @y) ->
     add : (v2) -> v @x + v2.x, @y + v2.y
+    sub : (v2) -> @add(v2.neg())
     neg : -> v -@x, -@y
     eq : (v2) -> @x == v2.x and @y == v2.y
 
@@ -31,7 +32,14 @@ canvas =
 
     setColor : (color) ->
         @ctx.fillStyle = @ctx.shadowColor = color
+
     out : (char, x, y) -> @ctx.fillText char, x*@dx, y*@dy
+
+    clear : (pos, w, h) ->
+        @ctx.fillStyle = "black"
+        @ctx.shadowBlur = 0
+        @ctx.fillRect pos.x*@dx, pos.y*@dy, w*@dx, h*@dy
+        @ctx.shadowBlur = 4
 
     start : (canvas) ->
         if not (@ctx = canvas.getContext "2d") then return
@@ -46,7 +54,6 @@ canvas =
 
         @game = new Game this
 
-    draw: ->
         @setColor "black"
         @ctx.fillRect 0, 0, @width*@dx, @height*@dy
         @setColor "white"
@@ -62,7 +69,7 @@ canvas =
         @out "+", 0, @height-1
         @out "+", @width-1, @height-1
 
-        @game.draw @ctx
+        @ctx.translate @dx, @dy
 
 class Game
     constructor : (@canvas) ->
@@ -70,15 +77,18 @@ class Game
         @player0 = new Player this, "orange", "WASD", (v 3, @grid.height/2), (v 1, 0)
         @player1 = new Player this, "cornflowerblue", "IJKL", (v @grid.width - 3, @grid.height/2), (v -1, 0)
         @timer = setInterval () =>
-            @canvas.draw()
+            @step()
         , 100
 
-    draw : (ctx) ->
-        ctx.save()
-        ctx.translate @canvas.dx, @canvas.dy
-        for sprite in @grid.all() when sprite
-            sprite.draw ctx
-        ctx.restore()
+    step : ->
+        @player0.step()
+        @player1.step()
+
+    refresh : (pos) ->
+        @canvas.clear (pos.sub (v 2, 2)), 5, 5
+        for x in [pos.x-2..pos.x+2]
+            for y in [pos.y-2..pos.y+2]
+                @grid.get(v x, y)?.draw()
 
     stop : () -> clearInterval @timer
 
@@ -91,20 +101,25 @@ class Player
         @game.grid.set this, @pos
         @newdir = @dir
 
-    draw : (ctx) ->
-        @game.canvas.setColor @color
-
+    step : ->
         newpos = @pos.add @newdir
         if (@game.grid.contains newpos) and not @game.grid.get newpos
-            (new Trail this, @dir, @newdir).draw ctx
+            new Trail this, @dir, @newdir
             @dir = @newdir
             @pos = newpos
             @game.grid.set this, @pos
-            @game.canvas.out "@", @pos.x, @pos.y
-        else 
-            @game.canvas.out "X", @pos.x, @pos.y
+            @char = "@"
+        else
+            @char = "X"
             @game.stop()
-        
+
+        @game.refresh @pos
+
+    draw : () ->
+        @game.canvas.setColor @color
+
+        @game.canvas.out @char, @pos.x, @pos.y
+
     onKeyDown : (char) ->
         idx = @keyconf.indexOf char
         if idx != -1
@@ -121,10 +136,10 @@ class Trail
             else "+"
         @player.game.grid.set this, @pos
 
-    draw : (ctx) ->
+    draw : () ->
         @player.game.canvas.setColor @player.color
         @player.game.canvas.out @char, @pos.x, @pos.y
- 
+
 window.onload = ->
     el = document.getElementById "canvas"
     canvas.start el
