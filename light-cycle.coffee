@@ -26,7 +26,7 @@ class Grid
 
     contains : (pos) -> 0 <= pos.x < @width and 0 <= pos.y < @height
 
-canvas =
+game =
     width : 30
     height : 30
     dx : 16
@@ -51,8 +51,6 @@ canvas =
         @ctx.textBaseline  = "top"
         @ctx.shadowBlur    = 4
 
-        @game = new Game this
-
         @setColor "black"
         @ctx.fillRect 0, 0, @width*@dx, @height*@dy
         @setColor "white"
@@ -68,13 +66,9 @@ canvas =
         @out "+", 0, @height-1
         @out "+", @width-1, @height-1
 
-        @ctx.translate @dx, @dy
-
-class Game
-    constructor : (@canvas) ->
-        @grid = new Grid @canvas.width-2, @canvas.height-2
-        @player0 = new Player this, "orange", "WASD", (v 3, @grid.height/2), (v 1, 0)
-        @player1 = new Player this, "cornflowerblue", "IJKL", (v @grid.width-1 - 3, @grid.height/2), (v -1, 0)
+        @grid = new Grid @width-2, @height-2
+        @player0 = new Player "orange", "WASD", (v 3, (@grid.height-1)/2), (v 1, 0)
+        @player1 = new Player "cornflowerblue", "IJKL", (v @grid.width-2 - 3, (@grid.height-1)/2), (v -1, 0)
         @timer = setInterval () =>
             @step()
         , 100
@@ -84,7 +78,7 @@ class Game
         @player1.step()
 
     refresh : (pos) ->
-        @canvas.clear (pos.sub (v 2, 2)), 5, 5
+        @clear (pos.sub (v 2, 2)), 5, 5
         for x in [pos.x-2..pos.x+2]
             for y in [pos.y-2..pos.y+2]
                 @grid.get(v x, y)?.draw()
@@ -96,28 +90,28 @@ class Game
         @player1.onKeyDown char
 
 class Player
-    constructor : (@game, @color, @keyconf, @pos, @dir) ->
-        @game.grid.set this, @pos
+    constructor : (@color, @keyconf, @pos, @dir) ->
+        game.grid.set this, @pos
         @newdir = @dir
 
     step : ->
         newpos = @pos.add @newdir
-        if (@game.grid.contains newpos) and not @game.grid.get newpos
+        if (game.grid.contains newpos) and not game.grid.get newpos
             new Trail this, @dir, @newdir
             @dir = @newdir
             @pos = newpos
-            @game.grid.set this, @pos
+            game.grid.set this, @pos
             @char = "@"
         else
             @char = "X"
-            @game.stop()
+            game.stop()
 
-        @game.refresh @pos
+        game.refresh @pos
 
     draw : () ->
-        @game.canvas.setColor @color
+        game.setColor @color
 
-        @game.canvas.out @char, @pos.x, @pos.y
+        game.out @char, @pos.x, @pos.y
 
     onKeyDown : (char) ->
         idx = @keyconf.indexOf char
@@ -133,13 +127,13 @@ class Trail
             if olddir.x == 0 and dir.x == 0 then "|"
             else if olddir.y == 0 and dir.y == 0 then "-"
             else "+"
-        @player.game.grid.set this, @pos
+        game.grid.set this, @pos
 
     draw : () ->
-        @player.game.canvas.setColor @player.color
-        @player.game.canvas.out @char, @pos.x, @pos.y
+        game.setColor @player.color
+        game.out @char, @pos.x, @pos.y
 
 window.onload = ->
     el = document.getElementById "canvas"
-    canvas.start el
-    document.body.onkeydown = (event) -> canvas.game.onKeyDown (String.fromCharCode event.keyCode)
+    game.start el
+    document.body.onkeydown = (event) -> game.onKeyDown (String.fromCharCode event.keyCode)
