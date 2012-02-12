@@ -27,8 +27,10 @@ class Grid
     contains : (pos) -> 0 <= pos.x < @width and 0 <= pos.y < @height
 
 canvas =
-    width : 60
+    width : 30
     height : 30
+    dx : 16
+    dy : 16
 
     setColor : (color) ->
         @ctx.fillStyle = @ctx.shadowColor = color
@@ -43,9 +45,6 @@ canvas =
 
     start : (canvas) ->
         if not (@ctx = canvas.getContext "2d") then return
-        @ctx.font = "14px monospace"
-        @dx = (@ctx.measureText "+").width
-        @dy = 16
         canvas.width = @width * @dx
         canvas.height = @height * @dy
         @ctx.font          = "14px monospace"
@@ -75,7 +74,7 @@ class Game
     constructor : (@canvas) ->
         @grid = new Grid @canvas.width-2, @canvas.height-2
         @player0 = new Player this, "orange", "WASD", (v 3, @grid.height/2), (v 1, 0)
-        @player1 = new Player this, "cornflowerblue", "IJKL", (v @grid.width - 3, @grid.height/2), (v -1, 0)
+        @player1 = new Player this, "cornflowerblue", "IJKL", (v @grid.width-1 - 3, @grid.height/2), (v -1, 0)
         @timer = setInterval () =>
             @step()
         , 100
