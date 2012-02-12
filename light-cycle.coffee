@@ -35,7 +35,11 @@ game =
     setColor : (color) ->
         @ctx.fillStyle = @ctx.shadowColor = color
 
-    out : (char, x, y) -> @ctx.fillText char, x*@dx, y*@dy
+    out : (char, pos) -> @ctx.fillText char, pos.x*@dx, pos.y*@dy
+
+    clearOut : (char, pos) ->
+        @clear pos, 1, 1
+        @out char, pos
 
     clear : (pos, w, h) ->
         @ctx.fillStyle = "black"
@@ -45,6 +49,12 @@ game =
 
     start : (canvas) ->
         if not (@ctx = canvas.getContext "2d") then return
+
+        @grid = new Grid @width-2, @height-2
+        halfHeight = Math.floor((@grid.height-1)/2)
+        @player0 = new Player "orange", "WASD", (v 3, halfHeight), (v 1, 0)
+        @player1 = new Player "cornflowerblue", "IJKL", (v @grid.width-2 - 3, halfHeight), (v -1, 0)
+
         canvas.width = @width * @dx
         canvas.height = @height * @dy
         @ctx.font          = "14px monospace"
@@ -53,22 +63,18 @@ game =
 
         @setColor "black"
         @ctx.fillRect 0, 0, @width*@dx, @height*@dy
-        @setColor "white"
 
         for x in [1..@width-2]
-            @out "-", x, 0
-            @out "-", x, @height-1
+            new Char "-", (v x, 0)
+            new Char "-", (v x, @height-1)
         for y in [1..@height-2]
-            @out "|", 0, y
-            @out "|", @width-1, y
-        @out "+", 0, 0
-        @out "+", @width-1, 0
-        @out "+", 0, @height-1
-        @out "+", @width-1, @height-1
+            new Char "|", (v 0, y)
+            new Char "|", (v @width-1, y)
+        new Char "+", (v 0, 0)
+        new Char "+", (v @width-1, 0)
+        new Char "+", (v 0, @height-1)
+        new Char "+", (v @width-1, @height-1)
 
-        @grid = new Grid @width-2, @height-2
-        @player0 = new Player "orange", "WASD", (v 3, (@grid.height-1)/2), (v 1, 0)
-        @player1 = new Player "cornflowerblue", "IJKL", (v @grid.width-2 - 3, (@grid.height-1)/2), (v -1, 0)
         @timer = setInterval () =>
             @step()
         , 100
@@ -89,6 +95,15 @@ game =
         @player0.onKeyDown char
         @player1.onKeyDown char
 
+class Char
+    constructor : (@char, @pos) ->
+        game.grid.set this, @pos
+        @draw()
+
+    draw : ->
+        game.setColor "white"
+        game.out @char, @pos
+
 class Player
     constructor : (@color, @keyconf, @pos, @dir) ->
         game.grid.set this, @pos
@@ -108,10 +123,9 @@ class Player
 
         game.refresh @pos
 
-    draw : () ->
+    draw : ->
         game.setColor @color
-
-        game.out @char, @pos.x, @pos.y
+        game.out @char, @pos
 
     onKeyDown : (char) ->
         idx = @keyconf.indexOf char
@@ -129,9 +143,9 @@ class Trail
             else "+"
         game.grid.set this, @pos
 
-    draw : () ->
+    draw : ->
         game.setColor @player.color
-        game.out @char, @pos.x, @pos.y
+        game.out @char, @pos
 
 window.onload = ->
     el = document.getElementById "canvas"
