@@ -59,6 +59,9 @@ game =
     start : (canvas) ->
         if not (@ctx = canvas.getContext "2d") then return
 
+        @width = Math.floor(window.innerWidth / @dx) - 1
+        @height = Math.floor(window.innerHeight / @dy) - 1
+
         canvas.width = @width * @dx
         canvas.height = @height * @dy
         @ctx.font          = "14px monospace"
