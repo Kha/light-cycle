@@ -1,9 +1,16 @@
+Math.trunc = (x) ->
+    if x > 0
+        Math.floor x
+    else
+        Math.ceil x
+
 class Vector
     constructor : (@x, @y) ->
     add : (v2) -> v @x + v2.x, @y + v2.y
     sub : (v2) -> @add(v2.neg())
     neg : -> v -@x, -@y
     eq : (v2) -> @x == v2.x and @y == v2.y
+    len : -> Math.sqrt @x*@x+@y*@y
 
 v = (x, y) -> new Vector x, y
 
@@ -73,7 +80,7 @@ game =
         @timer = setInterval () ->
             if next = cont.call _this
                 cont = next
-        , 100
+        , 200
 
     createBorder : ->
         for x in [1..@width-2]
@@ -117,6 +124,8 @@ game =
         else
             return null
 
+        if @player0.score > 10
+            clearInterval @timer
         @updateScore()
         cps.wait 5, @initPlay
 
@@ -131,6 +140,18 @@ game =
     onKeyDown : (char) ->
         @player0.onKeyDown char
         @player1.onKeyDown char
+
+    onTouchStart : (pos) ->
+        if pos.x / @dx < @width / 2
+            @player0.onTouchStart pos
+        else
+            @player1.onTouchStart pos
+
+    onTouchMove : (pos) ->
+        if pos.x / @dx < @width / 2
+            @player0.onTouchMove pos
+        else
+            @player1.onTouchMove pos
 
 class Char
     constructor : (@char, @pos) ->
@@ -182,6 +203,17 @@ class Player
         if @newdir.neg().eq @dir
             @newdir = @dir
 
+    onTouchStart : (@touchStart) ->
+
+    onTouchMove : (pos) ->
+        delta = pos.sub @touchStart
+        if delta.len() > 15
+            max = Math.max Math.abs(delta.x), Math.abs(delta.y)
+            @newdir = v Math.trunc(delta.x / max), Math.trunc(delta.y / max)
+        if @newdir.neg().eq @dir
+            @newdir = @dir
+            @touchStart = pos
+
     @tie : (player0, player1) ->
         if player0.pos.add(player0.dir).eq player1.pos.add(player1.dir)
             true
@@ -208,3 +240,23 @@ window.onload = ->
     el = document.getElementById "canvas"
     game.start el
     document.body.onkeydown = (event) -> game.onKeyDown (String.fromCharCode event.keyCode)
+    if "ontouchstart" of el
+        el.ontouchstart = (event) ->
+            event.preventDefault()
+            for t in event.changedTouches
+                game.onTouchStart v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop)
+        el.ontouchmove = (event) ->
+            event.preventDefault()
+            for t in event.changedTouches
+                game.onTouchMove v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop)
+        el.ontouchend = (event) ->
+            event.preventDefault()
+    else
+        down = false
+        el.onmousedown = (event) ->
+                game.onTouchStart v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
+                down = true
+        el.onmousemove = (event) ->
+                if down
+                    game.onTouchMove v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
+        el.onmouseup = -> down = false
