@@ -34,11 +34,24 @@ class Grid
     contains : (pos) -> 0 <= pos.x < @width and 0 <= pos.y < @height
 
 cps =
-    wait : (ticks, cont) ->
-        if ticks == 0
-            cont
-        else
-            -> cps.wait ticks-1, cont
+    create : (f) ->
+        cont = f
+        ->  
+            next = cont()
+            if next? then cont = next
+
+    wait : (ticks, cont) -> cps.for ticks, (->), cont
+
+    for : (ticks, loopBody, cont) ->
+        rec = (i) ->
+            if i == ticks
+                cont
+            else
+                ->
+                    loopBody i
+                    rec i+1, loopBody, cont
+        rec 0
+
 
 game =
     width : 31
@@ -75,12 +88,7 @@ game =
         @ctx.textBaseline  = "top"
         @ctx.shadowBlur    = 4
 
-        cont = @initPlay
-        _this = this
-        @timer = setInterval () ->
-            if next = cont.call _this
-                cont = next
-        , 200
+        @timer = setInterval (cps.create (=> @initPlay())), 200
 
     createBorder : ->
         for x in [1..@width-2]
@@ -95,39 +103,37 @@ game =
         new Char "+", (v @width-1, @height-1)
 
     updateScore : ->
-        Char.drawString @player0.score + " : " + @player1.score, (v -1, 0)
+        Char.drawString @score0 + " : " + @score1, (v -1, 0)
         
     initPlay : ->
         @grid = new Grid @width, @height
+        @score0 = @score1 = 0
 
         halfHeight = Math.floor((@grid.height-1)/2)
-        @player0 ?= new Player "orange", "WASD"
-        @player0.init v(3, halfHeight), v(1, 0)
-
-        @player1 ?= new Player "cornflowerblue", "IJKL"
-        @player1.init v(@grid.width-1 - 3, halfHeight), v(-1, 0)
+        @player0 = new Player "orange", "WASD", v(3, halfHeight), v(1, 0)
+        @player1 = new Player "cornflowerblue", "IJKL", v(@grid.width-1 - 3, halfHeight), v(-1, 0)
 
         @clear (v 0, 0), @width, @height
         @createBorder()
         @updateScore()
 
-        @step
+        => @step()
 
     step : ->
         if Player.tie(@player0, @player1)
-            @player0.score++
-            @player1.score++
+            @score0++
+            @score1++
         else if @player0.step()
-            @player1.score++
+            @score1++
         else if @player1.step()
-            @player0.score++
+            @score0++
         else
             return null
 
-        if @player0.score > 10
+        if @score0 > 10
             clearInterval @timer
         @updateScore()
-        cps.wait 5, @initPlay
+        cps.wait 5, => @initPlay()
 
     refresh : (pos) ->
         @clear (pos.sub (v 2, 2)), 5, 5
@@ -170,27 +176,32 @@ class Char
 
 class Player
     score : 0
+    score2: @score
 
-    constructor : (@color, @keyconf) ->
-
-    init : (@pos, @dir) ->
+    constructor : (@color, @keyconf, @pos, @dir) ->
         game.grid.set this, @pos
         @newdir = @dir
 
     step : ->
-        newpos = @pos.add @newdir
-        if (game.grid.contains newpos) and not game.grid.get newpos
-            new Trail this, @dir, @newdir
-            @dir = @newdir
-            @pos = newpos
-            game.grid.set this, @pos
-            @char = "@"
-            game.refresh @pos
-            0
-        else
-            @char = "X"
-            game.refresh @pos
-            1
+        @stepCont ?= cps.create =>
+            cps.for 4, (i) =>
+                game.setColor @color
+                game.clearOut ".oO@"[i], @pos
+            , =>
+                newpos = @pos.add @newdir
+                if (game.grid.contains newpos) and not game.grid.get newpos
+                    new Trail this, @dir, @newdir
+                    @dir = @newdir
+                    @pos = newpos
+                    game.grid.set this, @pos
+                    @char = "@"
+                else
+                    @char = "X"
+                game.refresh @pos
+                null
+
+        @stepCont()
+        @char == "X"
 
     draw : ->
         game.setColor @color
