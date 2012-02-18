@@ -76,6 +76,15 @@ game =
         @ctx.shadowBlur = 4
         @ctx.fillStyle = fillStyle
 
+    setScreen : (screenGetter) ->
+        # draw grid before instantiating screen
+        @grid = new Grid @width, @height
+        @clear (v 0, 0), @width, @height
+        @createBorder()
+
+        @screen = screenGetter()
+        @step = cps.create => @screen.step()
+
     start : (canvas) ->
         if not (@ctx = canvas.getContext "2d") then return
 
@@ -88,7 +97,9 @@ game =
         @ctx.textBaseline  = "top"
         @ctx.shadowBlur    = 4
 
-        @timer = setInterval (cps.create (=> @initPlay())), 200
+        @setScreen => new Menu()
+        @timer =
+            setInterval (=> @step()), 200
 
     createBorder : ->
         for x in [1..@width-2]
@@ -102,22 +113,28 @@ game =
         new Char "+", (v 0, @height-1)
         new Char "+", (v @width-1, @height-1)
 
-    updateScore : ->
-        Char.drawString @score0 + " : " + @score1, (v -1, 0)
-        
-    initPlay : ->
-        @grid = new Grid @width, @height
+    refresh : (pos) ->
+        @clear (pos.sub (v 2, 2)), 5, 5
+        for x in [pos.x-2..pos.x+2]
+            for y in [pos.y-2..pos.y+2]
+                @grid.get(v x, y)?.draw()
+
+    stop : () -> clearInterval @timer
+
+class Match
+    constructor : ->
         @score0 = @score1 = 0
+        @initPoint()
 
-        halfHeight = Math.floor((@grid.height-1)/2)
+    initPoint : ->
+        halfHeight = Math.floor((game.grid.height-1)/2)
         @player0 = new Player "orange", "WASD", v(3, halfHeight), v(1, 0)
-        @player1 = new Player "cornflowerblue", "IJKL", v(@grid.width-1 - 3, halfHeight), v(-1, 0)
+        @player1 = new Player "cornflowerblue", "IJKL", v(game.grid.width-1 - 3, halfHeight), v(-1, 0)
 
-        @clear (v 0, 0), @width, @height
-        @createBorder()
         @updateScore()
 
-        => @step()
+    updateScore : ->
+        Char.drawString @score0 + " : " + @score1, (v -1, 0)
 
     step : ->
         if Player.tie(@player0, @player1)
@@ -130,18 +147,14 @@ game =
         else
             return null
 
-        if @score0 > 10
-            clearInterval @timer
         @updateScore()
-        cps.wait 5, => @initPlay()
+        if Math.max(@score0, @score1) == 15
+            return cps.wait 10, => game.setScreen -> new Menu()
 
-    refresh : (pos) ->
-        @clear (pos.sub (v 2, 2)), 5, 5
-        for x in [pos.x-2..pos.x+2]
-            for y in [pos.y-2..pos.y+2]
-                @grid.get(v x, y)?.draw()
-
-    stop : () -> clearInterval @timer
+        cps.wait 5, =>
+            @initPoint()
+            game.setScreen => this
+            @updateScore()
 
     onKeyDown : (char) ->
         @player0.onKeyDown char
@@ -159,6 +172,16 @@ game =
         else
             @player1.onTouchMove pos
 
+class Menu
+    constructor : ->
+        Char.drawString "Press Enter to start!", (v -1, -1)
+
+    step : -> null
+
+    onKeyDown : (char) ->
+        if char == "\r"
+            game.setScreen => new Match()
+
 class Char
     constructor : (@char, @pos) ->
         game.grid.set this, @pos
@@ -171,6 +194,9 @@ class Char
     @drawString : (string, pos) ->
         if pos.x == -1
             pos = v Math.floor((game.grid.width - string.length)/2), pos.y
+        if pos.y == -1
+            pos = v pos.x, Math.floor(game.grid.height/2)
+
         for i in [0..string.length-1]
             new Char string[i], pos.add(v i, 0)
 
@@ -250,24 +276,25 @@ class Trail
 window.onload = ->
     el = document.getElementById "canvas"
     game.start el
-    document.body.onkeydown = (event) -> game.onKeyDown (String.fromCharCode event.keyCode)
+    document.body.onkeydown = (event) ->
+        game.screen.onKeyDown (String.fromCharCode event.keyCode)
     if "ontouchstart" of el
         el.ontouchstart = (event) ->
             event.preventDefault()
             for t in event.changedTouches
-                game.onTouchStart v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop)
+                game.screen.onTouchStart v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop)
         el.ontouchmove = (event) ->
             event.preventDefault()
             for t in event.changedTouches
-                game.onTouchMove v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop)
+                game.screen.onTouchMove v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop)
         el.ontouchend = (event) ->
             event.preventDefault()
     else
         down = false
         el.onmousedown = (event) ->
-                game.onTouchStart v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
+                game.screen.onTouchStart v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
                 down = true
         el.onmousemove = (event) ->
                 if down
-                    game.onTouchMove v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
+                    game.screen.onTouchMove v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
         el.onmouseup = -> down = false
