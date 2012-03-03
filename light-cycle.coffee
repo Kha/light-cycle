@@ -125,6 +125,56 @@ game =
 
     stop : () -> clearInterval @timer
 
+class Char
+    constructor : (@char, @pos, angle) ->
+        @angle = angle ? 0
+        game.grid.set this, @pos
+        @draw()
+
+    draw : ->
+        game.ctx.save()
+        game.setColor "white"
+        game.ctx.translate game.dx * @pos.x, game.dy * @pos.y
+        game.ctx.rotate @angle * Math.PI/2
+        game.clearOut @char, (v 0,0)
+        game.ctx.restore()
+
+    @drawString : (string, pos, angle) ->
+        angle ?= 0
+        delta = Vector.dirs[angle]
+        if pos.x == -1
+            pos = v Math.floor((game.grid.width - string.length * delta.x)/2), pos.y
+        if pos.y == -1
+            pos = v pos.x, Math.floor((game.grid.height - string.length * delta.y)/2)
+
+        chars = []
+        for c in string
+            chars.push new Char c, pos, angle
+            pos = pos.add delta
+        chars
+
+#{{{ screens
+
+class Menu
+    constructor : ->
+        @start = Char.drawString "Start!", (v -1, game.height/2-1)
+        @help = Char.drawString "Help!", (v -1, game.height/2+1)
+        Char.drawString "Player 1", (v 3, -1), 1
+        Char.drawString "Player 2", (v game.width-1 - 3, -1), 3
+
+    step : -> null
+
+    onKeyDown : (char) ->
+        if char == "\r"
+            game.setScreen => new Match()
+
+    onTouchStart : (pos) ->
+        pos = v Math.floor(pos.x/game.dx), Math.floor(pos.y/game.dy)
+        if @start.any (c -> c.pos.eq pos)
+            game.setScreen => new Match()
+        else if @help.any (c -> c.pos.eq pos)
+            game.setScreen => new Help()
+
 class Match
     constructor : ->
         @score0 = @score1 = 0
@@ -175,53 +225,6 @@ class Match
             @player0.onTouchMove pos
         else
             @player1.onTouchMove pos
-
-class Menu
-    constructor : ->
-        @start = Char.drawString "Start!", (v -1, game.height/2-1)
-        @help = Char.drawString "Help!", (v -1, game.height/2+1)
-        Char.drawString "Player 1", (v 3, -1), 1
-        Char.drawString "Player 2", (v game.width-1 - 3, -1), 3
-
-    step : -> null
-
-    onKeyDown : (char) ->
-        if char == "\r"
-            game.setScreen => new Match()
-
-    onTouchStart : (pos) ->
-        pos = v Math.floor(pos.x/game.dx), Math.floor(pos.y/game.dy)
-        if @start.any (c -> c.pos.eq pos)
-            game.setScreen => new Match()
-        else if @help.any (c -> c.pos.eq pos)
-            game.setScreen => new Help()
-class Char
-    constructor : (@char, @pos, angle) ->
-        @angle = angle ? 0
-        game.grid.set this, @pos
-        @draw()
-
-    draw : ->
-        game.ctx.save()
-        game.setColor "white"
-        game.ctx.translate game.dx * @pos.x, game.dy * @pos.y
-        game.ctx.rotate @angle * Math.PI/2
-        game.clearOut @char, (v 0,0)
-        game.ctx.restore()
-
-    @drawString : (string, pos, angle) ->
-        angle ?= 0
-        delta = Vector.dirs[angle]
-        if pos.x == -1
-            pos = v Math.floor((game.grid.width - string.length * delta.x)/2), pos.y
-        if pos.y == -1
-            pos = v pos.x, Math.floor((game.grid.height - string.length * delta.y)/2)
-
-        chars = []
-        for c in string
-            chars.push new Char c, pos, angle
-            pos = pos.add delta
-        chars
 
 class Player
     score : 0
@@ -295,6 +298,8 @@ class Trail
     draw : ->
         game.setColor @player.color
         game.out @char, @pos
+
+#}}}
 
 window.onload = ->
     el = document.getElementById "canvas"
