@@ -4,7 +4,7 @@ Math.trunc = (x) ->
     else
         Math.ceil x
 
-Array::any = (f) -> not this.every x -> not(f x)
+Array::any = (f) -> not this.every (x) -> not(f x)
 
 class Vector
     constructor : (@x, @y) ->
@@ -157,8 +157,8 @@ class Char
 
 class Menu
     constructor : ->
-        @start = Char.drawString "Start!", (v -1, game.height/2-1)
-        @help = Char.drawString "Help!", (v -1, game.height/2+1)
+        @start = Char.drawString "Start!", (v -1, Math.floor(game.height/2)-1)
+        @help = Char.drawString "Help!", (v -1, Math.floor(game.height/2)+1)
         Char.drawString "Player 1", (v 3, -1), 1
         Char.drawString "Player 2", (v game.width-1 - 3, -1), 3
 
@@ -170,10 +170,34 @@ class Menu
 
     onTouchStart : (pos) ->
         pos = v Math.floor(pos.x/game.dx), Math.floor(pos.y/game.dy)
-        if @start.any (c -> c.pos.eq pos)
+        if @start.any ((c) -> c.pos.eq pos)
             game.setScreen => new Match()
-        else if @help.any (c -> c.pos.eq pos)
+        else if @help.any ((c) -> c.pos.eq pos)
             game.setScreen => new Help()
+
+class Help
+    constructor : ->
+        text = """
+Manouver your light cycle quickly
+and precisely to make your
+opponents's cycle crash into the
+wall or your cycle's light trail!
+The first player to score 15 points
+wins the game. Swipe your finger to
+change your cycle's direction but
+don't forget to start the swipe in
+your respective half of the game field."""
+        for line, i in text.split '\n'
+            Char.drawString line, (v -1, i+5)
+
+        @roger = Char.drawString "Roger!", (v -1, game.height-1 - 3)
+
+    step : -> null
+
+    onTouchStart : (pos) ->
+        pos = v Math.floor(pos.x/game.dx), Math.floor(pos.y/game.dy)
+        if @roger.any ((c) -> c.pos.eq pos)
+            game.setScreen => new Menu()
 
 class Match
     constructor : ->
