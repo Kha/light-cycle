@@ -126,20 +126,21 @@ game =
     stop : () -> clearInterval @timer
 
 class Char
-    constructor : (@char, @pos, angle) ->
+    constructor : (@char, @pos, angle, color) ->
         @angle = angle ? 0
+        @color = color ? "white"
         game.grid.set this, @pos
         @draw()
 
     draw : ->
         game.ctx.save()
-        game.setColor "white"
+        game.setColor @color
         game.ctx.translate game.dx * @pos.x, game.dy * @pos.y
         game.ctx.rotate @angle * Math.PI/2
         game.clearOut @char, (v 0,0)
         game.ctx.restore()
 
-    @drawString : (string, pos, angle) ->
+    @drawString : (string, pos, angle, color) ->
         angle ?= 0
         delta = Vector.dirs[angle]
         if pos.x == -1
@@ -149,7 +150,7 @@ class Char
 
         chars = []
         for c in string
-            chars.push new Char c, pos, angle
+            chars.push new Char c, pos, angle, color
             pos = pos.add delta
         chars
 
@@ -159,8 +160,8 @@ class Menu
     constructor : ->
         @start = Char.drawString "Start!", (v -1, Math.floor(game.height/2)-1)
         @help = Char.drawString "Help!", (v -1, Math.floor(game.height/2)+1)
-        Char.drawString "Player 1", (v 3, -1), 1
-        Char.drawString "Player 2", (v game.width-1 - 3, -1), 3
+        Char.drawString "Player 1", (v 3, -1), 1, "orange"
+        Char.drawString "Player 2", (v game.width-1 - 3, -1), 3, "cornflowerblue"
 
     step : -> null
 
