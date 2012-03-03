@@ -4,6 +4,8 @@ Math.trunc = (x) ->
     else
         Math.ceil x
 
+Array::any = (f) -> not this.every x -> not(f x)
+
 class Vector
     constructor : (@x, @y) ->
     add : (v2) -> v @x + v2.x, @y + v2.y
@@ -11,6 +13,8 @@ class Vector
     neg : -> v -@x, -@y
     eq : (v2) -> @x == v2.x and @y == v2.y
     len : -> Math.sqrt @x*@x+@y*@y
+
+    @dirs : [new Vector(1, 0), new Vector(0, 1), new Vector(-1, 0), new Vector(0, -1)]
 
 v = (x, y) -> new Vector x, y
 
@@ -128,8 +132,8 @@ class Match
 
     initPoint : ->
         halfHeight = Math.floor((game.grid.height-1)/2)
-        @player0 = new Player "orange", "WASD", v(3, halfHeight), v(1, 0)
-        @player1 = new Player "cornflowerblue", "IJKL", v(game.grid.width-1 - 3, halfHeight), v(-1, 0)
+        @player0 = new Player "orange", "DSAW", v(3, halfHeight), v(1, 0)
+        @player1 = new Player "cornflowerblue", "LKJI", v(game.grid.width-1 - 3, halfHeight), v(-1, 0)
 
         @updateScore()
 
@@ -174,7 +178,10 @@ class Match
 
 class Menu
     constructor : ->
-        Char.drawString "Press Enter to start!", (v -1, -1)
+        @start = Char.drawString "Start!", (v -1, game.height/2-1)
+        @help = Char.drawString "Help!", (v -1, game.height/2+1)
+        Char.drawString "Player 1", (v 3, -1), 1
+        Char.drawString "Player 2", (v game.width-1 - 3, -1), 3
 
     step : -> null
 
@@ -182,23 +189,39 @@ class Menu
         if char == "\r"
             game.setScreen => new Match()
 
+    onTouchStart : (pos) ->
+        pos = v Math.floor(pos.x/game.dx), Math.floor(pos.y/game.dy)
+        if @start.any (c -> c.pos.eq pos)
+            game.setScreen => new Match()
+        else if @help.any (c -> c.pos.eq pos)
+            game.setScreen => new Help()
 class Char
-    constructor : (@char, @pos) ->
+    constructor : (@char, @pos, angle) ->
+        @angle = angle ? 0
         game.grid.set this, @pos
         @draw()
 
     draw : ->
+        game.ctx.save()
         game.setColor "white"
-        game.clearOut @char, @pos
+        game.ctx.translate game.dx * @pos.x, game.dy * @pos.y
+        game.ctx.rotate @angle * Math.PI/2
+        game.clearOut @char, (v 0,0)
+        game.ctx.restore()
 
-    @drawString : (string, pos) ->
+    @drawString : (string, pos, angle) ->
+        angle ?= 0
+        delta = Vector.dirs[angle]
         if pos.x == -1
-            pos = v Math.floor((game.grid.width - string.length)/2), pos.y
+            pos = v Math.floor((game.grid.width - string.length * delta.x)/2), pos.y
         if pos.y == -1
-            pos = v pos.x, Math.floor(game.grid.height/2)
+            pos = v pos.x, Math.floor((game.grid.height - string.length * delta.y)/2)
 
-        for i in [0..string.length-1]
-            new Char string[i], pos.add(v i, 0)
+        chars = []
+        for c in string
+            chars.push new Char c, pos, angle
+            pos = pos.add delta
+        chars
 
 class Player
     score : 0
@@ -236,7 +259,7 @@ class Player
     onKeyDown : (char) ->
         idx = @keyconf.indexOf char
         if idx != -1
-            @newdir = [v(0, -1), v(-1, 0), v(0,1), v(1, 0)][idx]
+            @newdir = Vector.dirs[idx]
         if @newdir.neg().eq @dir
             @newdir = @dir
 
