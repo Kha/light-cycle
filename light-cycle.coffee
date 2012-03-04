@@ -239,17 +239,17 @@ class Match
         @player0.onKeyDown char
         @player1.onKeyDown char
 
-    onTouchStart : (pos) ->
-        if pos.x / @dx < @width / 2
-            @player0.onTouchStart pos
+    onTouchStart : (pos, identifier) ->
+        if pos.x / game.dx < game.width / 2
+            @player0.onTouchStart pos, identifier
+            @player1.touchStart = null
         else
-            @player1.onTouchStart pos
+            @player1.onTouchStart pos, identifier
+            @player0.touchStart = null
 
-    onTouchMove : (pos) ->
-        if pos.x / @dx < @width / 2
-            @player0.onTouchMove pos
-        else
-            @player1.onTouchMove pos
+    onTouchMove : (pos, identifier) ->
+        @player0.onTouchMove pos, identifier
+        @player1.onTouchMove pos, identifier
 
 class Player
     score : 0
@@ -291,9 +291,11 @@ class Player
         if @newdir.neg().eq @dir
             @newdir = @dir
 
-    onTouchStart : (@touchStart) ->
+    onTouchStart : (@touchStart, @touchId) ->
 
-    onTouchMove : (pos) ->
+    onTouchMove : (pos, touchId) ->
+        if @touchId != touchId or not @touchStart? then return
+
         delta = pos.sub @touchStart
         if delta.len() > 15
             max = Math.max Math.abs(delta.x), Math.abs(delta.y)
@@ -335,11 +337,11 @@ window.onload = ->
         el.ontouchstart = (event) ->
             event.preventDefault()
             for t in event.changedTouches
-                game.screen.onTouchStart v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop)
+                game.screen.onTouchStart v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop), t.identifier
         el.ontouchmove = (event) ->
             event.preventDefault()
             for t in event.changedTouches
-                game.screen.onTouchMove v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop)
+                game.screen.onTouchMove v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop), t.identifier
         el.ontouchend = (event) ->
             event.preventDefault()
     else
