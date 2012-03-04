@@ -133,10 +133,8 @@
   };
 
   game = {
-    width: 31,
-    height: 31,
-    dx: 16,
-    dy: 16,
+    dx: 23,
+    dy: 23,
     setColor: function(color) {
       return this.ctx.fillStyle = this.ctx.shadowColor = color;
     },
@@ -173,7 +171,7 @@
       this.height = Math.floor(window.innerHeight / this.dy) - 1;
       canvas.width = this.width * this.dx;
       canvas.height = this.height * this.dy;
-      this.ctx.font = "14px monospace";
+      this.ctx.font = "20px monospace";
       this.ctx.textBaseline = "top";
       this.ctx.shadowBlur = 4;
       this.setScreen(function() {
@@ -181,7 +179,7 @@
       });
       return this.timer = setInterval((function() {
         return _this.step();
-      }), 200);
+      }), 400);
     },
     createBorder: function() {
       var x, y, _ref, _ref2;
@@ -394,17 +392,20 @@
 
     Match.prototype.onTouchStart = function(pos, identifier) {
       if (pos.x / game.dx < game.width / 2) {
-        this.player0.onTouchStart(pos, identifier);
-        return this.player1.touchStart = null;
+        return this.player0.onTouchStart(pos, identifier);
       } else {
-        this.player1.onTouchStart(pos, identifier);
-        return this.player0.touchStart = null;
+        return this.player1.onTouchStart(pos, identifier);
       }
     };
 
     Match.prototype.onTouchMove = function(pos, identifier) {
       this.player0.onTouchMove(pos, identifier);
       return this.player1.onTouchMove(pos, identifier);
+    };
+
+    Match.prototype.onTouchEnd = function(identifier) {
+      this.player0.onTouchEnd(identifier);
+      return this.player1.onTouchEnd(identifier);
     };
 
     return Match;
@@ -485,6 +486,10 @@
       }
     };
 
+    Player.prototype.onTouchEnd = function(touchId) {
+      if (this.touchId === touchId) return this.touchStart = null;
+    };
+
     Player.tie = function(player0, player1) {
       if (player0.pos.add(player0.dir).eq(player1.pos.add(player1.dir))) {
         return true;
@@ -548,21 +553,26 @@
         return _results;
       };
       return el.ontouchend = function(event) {
-        return event.preventDefault();
+        var t, _i, _len, _ref, _results;
+        event.preventDefault();
+        _ref = event.changedTouches;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          t = _ref[_i];
+          _results.push(game.screen.onTouchEnd(t.identifier));
+        }
+        return _results;
       };
     } else {
       down = false;
       el.onmousedown = function(event) {
-        game.screen.onTouchStart(v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop));
-        return down = true;
+        return game.screen.onTouchStart(v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop));
       };
       el.onmousemove = function(event) {
-        if (down) {
-          return game.screen.onTouchMove(v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop));
-        }
+        return game.screen.onTouchMove(v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop));
       };
       return el.onmouseup = function() {
-        return down = false;
+        return game.screen.onTouchEnd(void 0);
       };
     }
   };
