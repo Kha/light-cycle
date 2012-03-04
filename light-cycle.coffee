@@ -242,14 +242,16 @@ class Match
     onTouchStart : (pos, identifier) ->
         if pos.x / game.dx < game.width / 2
             @player0.onTouchStart pos, identifier
-            @player1.touchStart = null
         else
             @player1.onTouchStart pos, identifier
-            @player0.touchStart = null
 
     onTouchMove : (pos, identifier) ->
         @player0.onTouchMove pos, identifier
         @player1.onTouchMove pos, identifier
+
+    onTouchEnd : (identifier) ->
+        @player0.onTouchEnd identifier
+        @player1.onTouchEnd identifier
 
 class Player
     score : 0
@@ -304,6 +306,10 @@ class Player
             @newdir = @dir
             @touchStart = pos
 
+    onTouchEnd : (touchId) ->
+        if @touchId == touchId
+            @touchStart = null
+
     @tie : (player0, player1) ->
         if player0.pos.add(player0.dir).eq player1.pos.add(player1.dir)
             true
@@ -344,12 +350,12 @@ window.onload = ->
                 game.screen.onTouchMove v(t.pageX - el.offsetLeft, t.pageY - el.offsetTop), t.identifier
         el.ontouchend = (event) ->
             event.preventDefault()
+            for t in event.changedTouches
+                game.screen.onTouchEnd t.identifier
     else
         down = false
         el.onmousedown = (event) ->
-                game.screen.onTouchStart v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
-                down = true
+            game.screen.onTouchStart v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
         el.onmousemove = (event) ->
-                if down
-                    game.screen.onTouchMove v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
-        el.onmouseup = -> down = false
+            game.screen.onTouchMove v(event.pageX - el.offsetLeft, event.pageY - el.offsetTop)
+        el.onmouseup = -> game.screen.onTouchEnd undefined
