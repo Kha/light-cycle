@@ -58,10 +58,8 @@ cps =
 
 
 game =
-    width : 31
-    height : 31
-    dx : 16
-    dy : 16
+    dx : 23
+    dy : 23
 
     setColor : (color) ->
         @ctx.fillStyle = @ctx.shadowColor = color
@@ -97,13 +95,13 @@ game =
 
         canvas.width = @width * @dx
         canvas.height = @height * @dy
-        @ctx.font          = "14px monospace"
+        @ctx.font          = "20px monospace"
         @ctx.textBaseline  = "top"
         @ctx.shadowBlur    = 4
 
         @setScreen => new Menu()
         @timer =
-            setInterval (=> @step()), 200
+            setInterval (=> @step()), 400
 
     createBorder : ->
         for x in [1..@width-2]
