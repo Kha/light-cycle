@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:rim="http://www.blackberry.com/ns/widgets"
+        version="2.0.0.0">
+
+  <name>Light Cycle Duel</name>
+  <author>Sebastian Ullrich</author>
+  <description>Challenge your friend in this adaption of the original Tron light cycle race.  </description>
+  <rim:orientation mode="landscape"/>
+  <!--<rim:loadingScreen backgroundImage="background.png"
+                     foregroundImage="foreground.gif"
+                     onLocalPageLoad="true">
+  <rim:transitionEffect type="zoomIn"/>
+  </rim:loadingScreen>-->
+		
+  <rim:category name="games"/>	
+
+  <icon src="icon.png"/>
+
+  <content src="index.html"/>
+</widget>
