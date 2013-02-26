@@ -177,15 +177,22 @@ class Menu
 class Help
     constructor : ->
         text = """
-Manouver your light cycle quickly
-and precisely to make your
-opponents's cycle crash into the
-wall or your cycle's light trail!
-The first player to score 15 points
-wins the game. Swipe your finger to
-change your cycle's direction but
-don't forget to start the swipe in
-your respective half of the game field."""
+Maneuver your light cycle
+quickly and precisely to
+make your opponents's cycle
+crash into the wall or your
+cycle's light trail! The
+first player to score 15
+points wins the game. Swipe
+your finger to change your
+cycle's direction but don't
+forget to start the swipe in
+your respective half of the
+game field. If your device
+has a physical keyboard, the
+first player can also use
+keys WASD, the second one
+IJKL."""
         for line, i in text.split '\n'
             Char.drawString line, (v -1, i+5)
 
