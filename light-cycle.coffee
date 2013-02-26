@@ -101,7 +101,7 @@ game =
 
         @setScreen => new Menu()
         @timer =
-            setInterval (=> @step()), 400
+            setInterval (=> @step()), 200
 
     createBorder : ->
         for x in [1..@width-2]
@@ -177,15 +177,22 @@ class Menu
 class Help
     constructor : ->
         text = """
-Manouver your light cycle quickly
-and precisely to make your
-opponents's cycle crash into the
-wall or your cycle's light trail!
-The first player to score 15 points
-wins the game. Swipe your finger to
-change your cycle's direction but
-don't forget to start the swipe in
-your respective half of the game field."""
+Maneuver your light cycle
+quickly and precisely to
+make your opponents's cycle
+crash into the wall or your
+cycle's light trail! The
+first player to score 15
+points wins the game. Swipe
+your finger to change your
+cycle's direction but don't
+forget to start the swipe in
+your respective half of the
+game field. If your device
+has a physical keyboard, the
+first player can also use
+keys WASD, the second one
+IJKL."""
         for line, i in text.split '\n'
             Char.drawString line, (v -1, i+5)
 
@@ -209,6 +216,7 @@ class Match
         @player1 = new Player "cornflowerblue", "LKJI", v(game.grid.width-1 - 3, halfHeight), v(-1, 0)
 
         @updateScore()
+        @back = Char.drawString "Back", (v -1, game.grid.height-1)
 
     updateScore : ->
         Char.drawString @score0 + " : " + @score1, (v -1, 0)
@@ -238,6 +246,10 @@ class Match
         @player1.onKeyDown char
 
     onTouchStart : (pos, identifier) ->
+        pos2 = v Math.floor(pos.x/game.dx), Math.floor(pos.y/game.dy)
+        if @back.any ((c) -> c.pos.eq pos2)
+            return game.setScreen => new Menu()
+
         if pos.x / game.dx < game.width / 2
             @player0.onTouchStart pos, identifier
         else
