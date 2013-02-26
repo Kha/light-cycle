@@ -216,6 +216,7 @@ class Match
         @player1 = new Player "cornflowerblue", "LKJI", v(game.grid.width-1 - 3, halfHeight), v(-1, 0)
 
         @updateScore()
+        @back = Char.drawString "Back", (v -1, game.grid.height-1)
 
     updateScore : ->
         Char.drawString @score0 + " : " + @score1, (v -1, 0)
@@ -245,6 +246,10 @@ class Match
         @player1.onKeyDown char
 
     onTouchStart : (pos, identifier) ->
+        pos2 = v Math.floor(pos.x/game.dx), Math.floor(pos.y/game.dy)
+        if @back.any ((c) -> c.pos.eq pos2)
+            return game.setScreen => new Menu()
+
         if pos.x / game.dx < game.width / 2
             @player0.onTouchStart pos, identifier
         else
