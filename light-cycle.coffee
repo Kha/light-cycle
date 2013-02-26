@@ -101,7 +101,7 @@ game =
 
         @setScreen => new Menu()
         @timer =
-            setInterval (=> @step()), 400
+            setInterval (=> @step()), 200
 
     createBorder : ->
         for x in [1..@width-2]
